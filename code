@@ -1,0 +1,83 @@
+import urllib.request
+from bs4 import BeautifulSoup
+import time
+import random
+import sys
+import re
+
+def GrabLinks(url):
+    allLyrics = ""
+    fp = urllib.request.urlopen(url)
+    mybytes = fp.read()
+    mystr = mybytes.decode("utf8")
+    fp.close()
+    soup = BeautifulSoup(mystr, features="html.parser")
+    songs = soup.find("div",{"id":"listAlbum"})
+    
+    count=len(songs.find_all("a"))
+    print(count,"Songs Total")
+    total = 0
+    
+    iter = 0
+    mins = 0
+    for song in songs.find_all("a"):
+        songstr = str(song)
+        iter+=1
+        timeinterval=21+(random.randint(1,61))
+        title=re.findall(r'<a href="/lyrics/(.*?).html(.*?)',songstr)
+        title = title[0][0]
+        fileName = title.split('/')[0]
+        print(iter,title,timeinterval)
+    
+        total = total+timeinterval
+        minutes = round(total/60,2)
+        mins =+ minutes
+        averageMins = mins/iter
+        print('Elapsed Time:',minutes,'mins')
+        print('Estimated Time Remaining:',averageMins*(count-iter))
+        link = song.attrs["href"][0:]
+        
+        print(count-iter,"Songs Remaining")
+        print()
+    
+        for remaining in range(timeinterval, 0, -1):
+            sys.stdout.write("\r")
+            sys.stdout.write("{:2d} seconds sleep until next song..".format(remaining))
+            sys.stdout.flush()
+            time.sleep(1)
+        
+        sys.stdout.write("\rComplete!                             \n")
+    
+        try:
+            lyrics = GrabLyrics("https://www.azlyrics.com"+link)
+    
+            file1 = open(f"/home/knowbody/Desktop/{fileName}.txt", "a")
+            file1.write(lyrics)
+            file1.write(" ")
+            file1.close()
+            allLyrics += lyrics
+        except Exception as e:
+            pass
+    return allLyrics
+
+    print('AllLyrics',len(allLyrics))
+
+def GrabLyrics (url):
+    fp = urllib.request.urlopen(url)
+    mybytes = fp.read()
+    mystr = mybytes.decode("utf8")
+    fp.close()
+    soup = BeautifulSoup(mystr,features="html.parser")
+    lyrics = soup.body.findAll("b")[1].find_next("div")
+    for e in lyrics.findAll('br'):
+        e.extract()
+    lyrics = lyrics.contents[4:]
+    fixedLyrics = []
+    for e in lyrics:
+        fixedLyrics.append(e.strip())
+    fixedLyrics = list(filter(None, fixedLyrics))
+    fixedLyrics = (' '.join(fixedLyrics))
+    return fixedLyrics
+
+# Change the URL below to the band/artist on the website and run the full code
+elasticallLyrics = GrabLinks("https://www.azlyrics.com/m/madonna.html")
